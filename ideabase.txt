@@ -1,0 +1,260 @@
+### Proyecto: Aplicación de Votaciones Web Full-Stack con Docker y CI/CD
+
+**Objetivo:** Crear una aplicación web full-stack donde los usuarios pueden votar por "Cats" o "Dogs" 
+y ver los resultados en tiempo real. El proyecto completo se ejecutará en contenedores Docker, 
+será orquestado con Docker Compose y tendrá un flujo de Integración Continua (CI) con GitHub Actions.
+
+---
+
+### **Fase 1: Configuración Inicial y Backend**
+
+**Paso 1.1: Preparación del Entorno Local**
+1.  **Crear Estructura de Carpetas:**
+    ```
+    practica-2/
+    ├── backend/
+    ├── frontend/
+    └── .github/
+        └── workflows/
+    ```
+2.  **Inicializar Repositorio Git:**
+    - Abre tu terminal en la carpeta `practica-2`.
+    - Ejecuta `git init` para empezar a rastrear tus cambios.
+3.  **Crear `.gitignore`:**
+    - En la raíz (`practica-2/`), crea un archivo `.gitignore`.
+    - Añade las siguientes líneas para ignorar archivos y carpetas innecesarios:
+      ```
+      # Python
+      __pycache__/
+      *.pyc
+      .env
+      
+      # Docker
+      docker-compose.override.yml
+      ```
+
+**Paso 1.2: Desarrollar el Servicio de Backend (API con Flask)**
+*Ubicación: `practica-2/backend/`*
+
+1.  **Definir Dependencias (`requirements.txt`):**
+    - Crea `backend/requirements.txt` con el siguiente contenido:
+      ```
+      Flask
+      psycopg2-binary
+      gunicorn
+      ```
+      - **Flask:** El microframework para crear la API.
+      - **psycopg2-binary:** El driver para conectar Python con PostgreSQL.
+      - **gunicorn:** Un servidor WSGI de producción para ejecutar la aplicación de forma robusta.
+
+2.  **Crear la Aplicación Flask (`app.py`):**
+    - Crea `backend/app.py`. Este será el corazón de tu API.
+    - **Plan de Implementación:**
+        - **Importar librerías:** `Flask`, `jsonify`, `os` (para variables de entorno), `psycopg2`.
+        - **Conexión a la BD:** Crear una función `get_db_connection()` que lea las credenciales (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`) de las variables de entorno y se conecte a PostgreSQL.
+        - **Endpoint `POST /vote/<option>`:**
+            - Recibirá 'cats' o 'dogs' como parte de la URL.
+            - Se conectará a la base de datos.
+            - Actualizará un contador en una tabla de votos.
+            - Devolverá un estado de éxito.
+        - **Endpoint `GET /results`:**
+            - Se conectará a la base de datos.
+            - Consultará los votos totales para 'cats' y 'dogs'.
+            - Devolverá los resultados en formato JSON.
+        - **Endpoint `GET /` (Health Check):**
+            - Una ruta simple que devuelve un `{"status": "ok"}` para verificar que la API está viva.
+
+3.  **Crear el `Dockerfile` del Backend:**
+    - Crea `backend/Dockerfile`.
+    - **Plan de Implementación:**
+      ```dockerfile
+      # 1. Usar una imagen base oficial de Python
+      FROM python:3.9-slim
+
+      # 2. Establecer el directorio de trabajo dentro del contenedor
+      WORKDIR /app
+
+      # 3. Copiar solo el archivo de dependencias e instalarlas
+      # (Esto aprovecha el cache de Docker si no cambian las dependencias)
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+
+      # 4. Copiar el resto del código de la aplicación
+      COPY . .
+
+      # 5. Exponer el puerto en el que correrá Gunicorn
+      EXPOSE 5000
+
+      # 6. Comando para ejecutar la aplicación en producción
+      # Usará 2 workers y escuchará en todas las interfaces en el puerto 5000
+      CMD ["gunicorn", "--workers=2", "--bind=0.0.0.0:5000", "app:app"]
+      ```
+
+---
+
+### **Fase 2: Frontend y Base de Datos**
+
+**Paso 2.1: Desarrollar el Servicio de Frontend (HTML/JS/Nginx)**
+*Ubicación: `practica-2/frontend/`*
+
+1.  **Crear la Interfaz de Usuario (`index.html`):**
+    - Crea `frontend/index.html`.
+    - **Plan de Implementación:**
+        - Un título `<h1>Cats vs Dogs Vote</h1>`.
+        - Dos botones, uno para "Vote for Cats" y otro para "Vote for Dogs".
+        - Un `div` con `id="results"` donde se mostrarán los conteos de votos.
+        - Incluir una etiqueta `<script src="app.js"></script>` al final del `<body>`.
+
+2.  **Añadir Lógica JavaScript (`app.js`):**
+    - Crea `frontend/app.js`.
+    - **Plan de Implementación:**
+        - **Función `fetchResults()`:**
+            - Hará una petición `fetch('/api/results')`.
+            - Procesará el JSON de respuesta y actualizará el contenido del `div#results`.
+        - **Función `vote(option)`:**
+            - Hará una petición `fetch('/api/vote/' + option, { method: 'POST' })`.
+            - Después de votar, llamará a `fetchResults()` para actualizar la vista.
+        - **Event Listeners:**
+            - Asignar `onclick` a los botones para que llamen a `vote('cats')` o `vote('dogs')`.
+            - Llamar a `fetchResults()` cuando la página cargue por primera vez.
+
+3.  **Crear el `Dockerfile` del Frontend:**
+    - Crea `frontend/Dockerfile`.
+    - **Plan de Implementación:**
+      ```dockerfile
+      # 1. Usar una imagen base de Nginx (servidor web ligero)
+      FROM nginx:stable-alpine
+
+      # 2. Copiar los archivos estáticos (HTML, JS, CSS) a la carpeta web de Nginx
+      COPY . /usr/share/nginx/html
+
+      # 3. (Opcional) Configuración de Nginx para redirigir peticiones a la API
+      # Esto es clave para evitar problemas de CORS.
+      # Crea un archivo `nginx.conf` y cópialo a `/etc/nginx/conf.d/default.conf`
+      # En nginx.conf, configurarás un `location /api/` que actúe como proxy reverso
+      # hacia el servicio del backend (ej: `proxy_pass http://backend:5000;`).
+      ```
+
+**Paso 2.2: Script de Inicialización de la Base de Datos**
+*Ubicación: `practica-2/`*
+
+1.  **Crear `init.sql`:**
+    - En la raíz del proyecto, crea un archivo `init.sql`. Docker Compose lo usará para inicializar la base de datos la primera vez que se cree el contenedor.
+    - **Contenido:**
+      ```sql
+      CREATE TABLE votes (
+          id VARCHAR(255) PRIMARY KEY,
+          count INT NOT NULL DEFAULT 0
+      );
+      INSERT INTO votes (id, count) VALUES ('cats', 0);
+      INSERT INTO votes (id, count) VALUES ('dogs', 0);
+      ```
+
+---
+
+### **Fase 3: Orquestación y CI/CD**
+
+**Paso 3.1: Orquestar Contenedores con Docker Compose**
+*Ubicación: `practica-2/docker-compose.yml`*
+
+1.  **Crear `docker-compose.yml`:**
+    - **Plan de Implementación:**
+      ```yaml
+      version: '3.8'
+
+      services:
+        # Servicio de Base de Datos (PostgreSQL)
+        db:
+          image: postgres:14-alpine
+          environment:
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: votes
+          volumes:
+            - postgres_data:/var/lib/postgresql/data/ # Persistencia de datos
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Script de inicialización
+          networks:
+            - app-network
+
+        # Servicio de Backend (API Flask)
+        backend:
+          build: ./backend
+          environment:
+            DB_HOST: db # El nombre del servicio de la BD
+            DB_NAME: votes
+            DB_USER: user
+            DB_PASS: password
+          depends_on:
+            - db # Espera a que la BD esté lista
+          networks:
+            - app-network
+
+        # Servicio de Frontend (Nginx)
+        frontend:
+          build: ./frontend
+          ports:
+            - "8080:80" # Expone el puerto 80 del contenedor al 8080 de la máquina host
+          depends_on:
+            - backend
+          networks:
+            - app-network
+
+      volumes:
+        postgres_data:
+
+      networks:
+        app-network:
+          driver: bridge
+      ```
+
+**Paso 3.2: Flujo de Integración Continua (CI) con GitHub Actions**
+*Ubicación: `.github/workflows/ci.yml`*
+
+1.  **Crear el Workflow (`ci.yml`):**
+    - **Plan de Implementación:**
+      ```yaml
+      name: CI - Build Docker Images
+
+      on:
+        push:
+          branches: [ main ] # Se ejecuta en cada push a la rama main
+        pull_request:
+          branches: [ main ] # También en pull requests hacia main
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest # Usar un runner de Linux
+
+          steps:
+            - name: Checkout code
+              uses: actions/checkout@v3 # Paso para clonar el repositorio
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v2
+
+            - name' Build images with Docker Compose
+              run: docker-compose build
+              # Este comando intenta construir las imágenes.
+              # Si algún Dockerfile tiene un error, el build fallará,
+              # y el workflow de CI fallará, notificando el error.
+      ```
+
+---
+
+### **Fase 4: Flujo de Trabajo y Verificación**
+
+1.  **Desarrollo Local:**
+    - **Construir e iniciar:** `docker-compose up --build`
+    - **Verificar:** Abre `http://localhost:8080` en tu navegador. Deberías ver la interfaz.
+    - **Probar:** Vota y verifica que los resultados se actualizan.
+    - **Ver logs:** `docker-compose logs -f backend` o `docker-compose logs -f frontend`.
+    - **Detener:** `docker-compose down`. Para eliminar los volúmenes (y resetear la BD): `docker-compose down -v`.
+
+2.  **Control de Versiones (Git):**
+    - A medida que completes cada paso, haz commits claros.
+    - Ejemplo: `git add backend/` -> `git commit -m "feat: Implement Flask API for voting"`
+    - Empuja tus cambios a GitHub: `git push origin main`.
+
+3.  **Verificar CI en GitHub:**
+    - Después de hacer `push`, ve a la pestaña "Actions" de tu repositorio en GitHub.
+    - Deberías ver tu workflow "CI - Build Docker Images" ejecutándose. Si todo está bien, aparecerá con un check verde. Si falla, podrás inspeccionar los logs para ver qué pasó.
