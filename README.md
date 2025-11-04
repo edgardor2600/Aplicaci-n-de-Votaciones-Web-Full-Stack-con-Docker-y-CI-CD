@@ -110,10 +110,4 @@ Para ejecutar las pruebas automatizadas, asegúrate de tener las variables de en
 pytest backend/tests/test_api.py
 ```
 
-## Siguientes Pasos (Roadmap)
 
--   [ ] Desarrollar el frontend con HTML, CSS y JavaScript.
--   [ ] Crear el `Dockerfile` para el frontend usando Nginx.
--   [ ] Crear el `Dockerfile` para el backend.
--   [ ] Orquestar todos los servicios (`frontend`, `backend`, `db`) con `docker-compose.yml`.
--   [ ] Expandir el workflow de CI para construir las imágenes de Docker.
