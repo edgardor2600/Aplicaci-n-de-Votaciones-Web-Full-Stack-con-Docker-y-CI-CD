@@ -50,3 +50,13 @@ jobs:
           done
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
+      - name: Run backend tests
+        env:
+          PGPASSWORD: password
+          DB_HOST: 127.0.0.1
+          DB_USER: user
+          DB_PASS: password
+          DB_NAME: votes
+        run: |
+          pytest backend/tests
+
