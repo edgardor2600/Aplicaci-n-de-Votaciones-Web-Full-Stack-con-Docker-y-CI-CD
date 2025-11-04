@@ -10,7 +10,7 @@ Este proyecto es una aplicación web full-stack que permite a los usuarios votar
 *   **Frontend (Planeado):** Una interfaz de usuario sencilla (HTML, CSS, JS) para interactuar con la API.
 *   **Contenerización (Planeado):** Toda la aplicación (backend, frontend, base de datos) será orquestada con Docker y Docker Compose.
 
-## Arquitectura y Tecnologías
+## Arquitectura y Tecnologías.
 
 | Componente | Tecnología | Descripción |
 | :--- | :--- | :--- |
