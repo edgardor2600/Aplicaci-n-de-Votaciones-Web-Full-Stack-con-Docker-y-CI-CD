@@ -1,0 +1,61 @@
+name: CI - Backend tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: votes
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U user -d votes"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Wait for Postgres & init schema
+        env:
+          PGPASSWORD: password
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U user -d votes; then
+              break
+            fi
+            sleep 1
+          done
+          psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
+
+      - name: Run backend tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: votes
+          DB_USER: user
+          DB_PASS: password
+          PYTHONPATH: backend
+        run: |
+          python backend/tests/test_db.py
