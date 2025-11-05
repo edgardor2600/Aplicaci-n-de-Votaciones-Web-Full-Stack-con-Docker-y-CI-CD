@@ -1,0 +1,12 @@
+{
+  "name": "voting-app-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the Cats vs Dogs voting application.",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}

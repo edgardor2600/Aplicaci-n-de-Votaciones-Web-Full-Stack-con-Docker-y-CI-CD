@@ -103,7 +103,7 @@ jobs:
           fi
 
   frontend-tests:
-    name: Tests del Frontend
+    name: Frontend E2E Tests
     runs-on: ubuntu-latest
     needs: frontend-validation
 
@@ -116,50 +116,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Run frontend tests script
+      - name: Install Dependencies
+        working-directory: ./frontend
         run: |
-          echo "🧪 Ejecutando script de tests del frontend..."
-          chmod +x frontend/test-frontend.sh
-          ./frontend/test-frontend.sh
-          
-      - name: Test JavaScript syntax
+          echo "📦 Installing frontend dependencies..."
+          npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ./frontend
         run: |
-          echo "📝 Verificando sintaxis JavaScript..."
-          
-          js_files=(
-            "frontend/www/js/api.js"
-            "frontend/www/js/components.js"
-            "frontend/www/js/app.js"
-            "frontend/www/js/tests.js"
-          )
-          
-          for file in "${js_files[@]}"; do
-            if node -c "$file" 2>/dev/null; then
-              echo "✅ $file - Sintaxis válida"
-            else
-              echo "❌ $file - Error de sintaxis"
-              exit 1
-            fi
-          done
-          
-      - name: Test Nginx configuration
+          echo "🌐 Installing Playwright browsers..."
+          npx playwright install --with-deps
+
+      - name: Run Playwright Tests
+        working-directory: ./frontend
         run: |
-          echo "⚙️  Validando configuración de Nginx..."
-          
-          # Verificar que la configuración tenga los elementos clave
-          if grep -q "proxy_pass" frontend/nginx/default.conf; then
-            echo "✅ Proxy reverso configurado"
-          else
-            echo "❌ Proxy reverso no configurado"
-            exit 1
-          fi
-          
-          if grep -q "backend:5000" frontend/nginx/default.conf; then
-            echo "✅ Proxy al backend configurado"
-          else
-            echo "❌ Proxy al backend no configurado"
-            exit 1
-          fi
+          echo "🧪 Running Playwright end-to-end tests..."
+          npx playwright test
+
 
   docker-build:
     name: Construir Imagen Docker
