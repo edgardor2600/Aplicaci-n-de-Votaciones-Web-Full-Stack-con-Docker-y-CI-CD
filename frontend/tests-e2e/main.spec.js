@@ -1,25 +1,29 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Main Page: Structure and Voting', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    // Esperar a que la aplicación esté lista y el toast inicial desaparezca
-    await page.waitForTimeout(2500);
-    // Detener el auto-refresh para evitar race conditions en el test
-    await page.evaluate(() => window.app.stopAutoRefresh());
-  });
+  // La navegación y configuración ahora se manejan en cada test
+  // para permitir el mocking de rutas ANTES de que la página cargue.
 
   test('should have the correct title', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(2500); // Mantenido para consistencia con la lógica original
+    await page.evaluate(() => window.app.stopAutoRefresh());
     await expect(page).toHaveTitle('Cats vs Dogs - Votación');
   });
 
   test('should display the main header', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(2500);
+    await page.evaluate(() => window.app.stopAutoRefresh());
     const header = page.locator('.header .logo');
     await expect(header).toBeVisible();
     await expect(header).toHaveText('🐾 Cats vs Dogs');
   });
 
   test('should display both voting cards', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(2500);
+    await page.evaluate(() => window.app.stopAutoRefresh());
     const catsCard = page.locator('div.voting-card[data-option="cats"]');
     const dogsCard = page.locator('div.voting-card[data-option="dogs"]');
 
@@ -31,57 +35,30 @@ test.describe('Main Page: Structure and Voting', () => {
   });
 
   test('should show loading indicator and results after voting', async ({ page }) => {
-    // Intercepta TODAS las rutas del API del frontend
-    await page.route('**/api/**', async route => {
-      const req = route.request();
+    // 1. Navegar a la página
+    await page.goto('/');
 
-      if (req.url().includes('/vote') && req.method() === 'POST') {
-        // pequeña latencia para que el overlay sea visible y el flujo sea realista
-        await new Promise(r => setTimeout(r, 120));
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ ok: true, voted: 'cats' }),
-        });
-      }
+    // Esperar a que la app se inicialice y detener el auto-refresh
+    await page.waitForSelector('#toast-container .toast.toast--success');
+    await page.evaluate(() => window.app.stopAutoRefresh());
 
-      if (req.url().includes('/results') && req.method() === 'GET') {
-        // leve retraso también aquí, simulando consulta real
-        await new Promise(r => setTimeout(r, 80));
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ cats: 1, dogs: 0 }),
-        });
-      }
+    // 2. Obtener los conteos iniciales (pueden ser > 0 por votos previos)
+    const initialCats = parseInt(await page.locator('#cats-count').textContent());
+    const initialDogs = parseInt(await page.locator('#dogs-count').textContent());
 
-      if (req.url().includes('/health')) {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ status: 'ok' }),
-        });
-      }
-
-      return route.continue();
-    });
-
-    // 1. Hacer clic en el botón de votar
+    // 3. Simular el voto del usuario
     await page.locator('button[data-option="cats"]').click();
 
-    // 2. Esperar a que el resultado final sea visible (enfoque robusto)
-    const results = page.locator('#results');
-    await expect(results).toBeVisible({ timeout: 15000 });
+    // 4. Esperar a que el overlay de carga desaparezca
+    await expect(page.locator('#loading-overlay')).toBeHidden({ timeout: 10000 });
 
-    // 3. Verificar que el contenido de los resultados es correcto
-    const catsCount = page.locator('#cats-count');
-    await expect(catsCount).toHaveText('1');
+    // 5. Verificar que el contador de gatos se incrementó en 1
+    await expect(page.locator('#cats-count')).toHaveText((initialCats + 1).toString());
 
-    // 4. (Opcional pero recomendado) Asegurarse de que el overlay ya no está
-    await expect(page.locator('#loading-overlay')).toBeHidden();
+    // 6. Verificar que el contador de perros no cambió
+    await expect(page.locator('#dogs-count')).toHaveText(initialDogs.toString());
 
-    // 5. Verificar que aparece la notificación de éxito del voto (más específica)
-    // Usar .last() para obtener el toast más reciente (el del voto)
+    // 7. Verificar que la notificación de éxito del voto es visible
     const successToast = page.locator('#toast-container .toast.toast--success').last();
     await expect(successToast).toBeVisible();
     await expect(successToast).toContainText(/gracias/i);

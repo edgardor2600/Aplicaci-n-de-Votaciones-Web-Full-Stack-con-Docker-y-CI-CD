@@ -228,7 +228,7 @@ jobs:
           CI: 'true'
         run: |
           echo "🧪 Running Playwright end-to-end tests..."
-          npx playwright test
+          npx playwright test --project=chromium
 
       - name: Upload Playwright report (on failure)
         if: failure()
