@@ -47,8 +47,10 @@ test.describe('Main Page: Structure and Voting', () => {
     const initialCats = parseInt(await page.locator('#cats-count').textContent());
     const initialDogs = parseInt(await page.locator('#dogs-count').textContent());
 
-    // 3. Simular el voto del usuario
+    // 3. Simular el voto del usuario y esperar respuesta exitosa
+    const voteResponse = page.waitForResponse((resp) => resp.url().includes('/api/vote') && resp.status() === 201);
     await page.locator('button[data-option="cats"]').click();
+    await voteResponse; // Verifica que el backend recibió el voto
 
     // 4. Esperar a que el overlay de carga desaparezca
     await expect(page.locator('#loading-overlay')).toBeHidden({ timeout: 10000 });
