@@ -5,6 +5,8 @@ test.describe('Main Page: Structure and Voting', () => {
     await page.goto('/');
     // Esperar a que la aplicación esté lista y el toast inicial desaparezca
     await page.waitForTimeout(2500);
+    // Detener el auto-refresh para evitar race conditions en el test
+    await page.evaluate(() => window.app.stopAutoRefresh());
   });
 
   test('should have the correct title', async ({ page }) => {
