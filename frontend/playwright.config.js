@@ -31,14 +31,13 @@ module.exports = defineConfig({
 
   // Configuración del servidor web
   webServer: {
-    // Usar http-server con proxy al backend
-    command: 'npx http-server www -p 8080 -P http://localhost:5000 --cors',
-    port: 8080,
-    timeout: 60000,
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  command: 'npx http-server www -p 8080 -P http://127.0.0.1:5000 --cors -a 127.0.0.1',
+  port: 8080,
+  timeout: 60000,
+  reuseExistingServer: !process.env.CI,
+  stdout: 'pipe',
+  stderr: 'pipe',
+},
 
   // Configuración de reportes
   reporter: [

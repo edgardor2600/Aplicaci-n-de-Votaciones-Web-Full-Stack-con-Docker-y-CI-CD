@@ -4,7 +4,7 @@
   "description": "Frontend for the Cats vs Dogs voting application.",
   "private": true,
   "scripts": {
-    "start": "http-server www -p 8080 -P http://localhost:5000 --cors",
+  "start": "http-server www -p 8080 -P http://127.0.0.1:5000 --cors -a 127.0.0.1",
     "test": "npx playwright test",
     "test:debug": "npx playwright test --debug",
     "test:ui": "npx playwright test --ui",
