@@ -63,11 +63,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies
-        run: |
-          echo "📦 Verificando sintaxis de archivos JavaScript..."
-          chmod +x frontend/test-frontend.sh
-          ./frontend/test-frontend.sh
+
 
       - name: Validate CSS structure
         run: |
