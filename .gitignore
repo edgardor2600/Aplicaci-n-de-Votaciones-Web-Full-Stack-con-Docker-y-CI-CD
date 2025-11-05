@@ -1,10 +1,22 @@
-```
-      # Python
-      __pycache__/
-      *.pyc
-      .env
-      backend/__pycache__/
-      
-      # Docker
-      docker-compose.override.yml
-      ```
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker
+docker-compose.override.yml
+
+# Test results
+test-results/
+
+# IDE files
+.idea/
+.vscode/

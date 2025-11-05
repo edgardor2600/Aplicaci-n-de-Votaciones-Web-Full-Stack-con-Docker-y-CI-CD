@@ -25,13 +25,7 @@ module.exports = defineConfig({
 
   // Iniciar un servidor web local antes de ejecutar los tests
   webServer: {
-    // Comando para iniciar el servidor
-    command: 'python -m http.server 8080',
-    // Directorio desde donde servir los archivos
-    cwd: './www',
-    // URL a esperar antes de iniciar los tests
-    url: 'http://localhost:8080',
-    // Reusar el servidor si ya está activo
+    url: 'http://localhost',
     reuseExistingServer: !process.env.CI,
   },
 });
