@@ -109,5 +109,5 @@ Para ejecutar las pruebas automatizadas, asegúrate de tener las variables de en
 ```bash
 pytest backend/tests/test_api.py
 ```
-
+.
 
