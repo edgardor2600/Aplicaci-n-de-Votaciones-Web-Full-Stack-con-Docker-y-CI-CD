@@ -4,48 +4,57 @@ Este proyecto es una aplicación web full-stack que permite a los usuarios votar
 
 ## Características
 
-*   **Backend API (Implementado):** Un servicio robusto construido con Flask (Python) que gestiona la lógica de negocio.
-*   **Base de Datos (Implementado):** PostgreSQL para persistir los datos de las votaciones.
-*   **Integración Continua (Implementado):** Un workflow de GitHub Actions que ejecuta tests automáticamente en cada `push` y `pull request` a la rama `main`.
-*   **Frontend (Planeado):** Una interfaz de usuario sencilla (HTML, CSS, JS) para interactuar con la API.
-*   **Contenerización (Planeado):** Toda la aplicación (backend, frontend, base de datos) será orquestada con Docker y Docker Compose.
+*   **Backend API:** Un servicio robusto construido con Flask (Python) que gestiona la lógica de negocio.
+*   **Frontend:** Una interfaz de usuario interactiva (HTML, CSS, JS) para que los usuarios puedan votar y ver los resultados.
+*   **Base de Datos:** PostgreSQL para persistir los datos de las votaciones.
+*   **Contenerización:** Toda la aplicación (backend, frontend, base de datos) está orquestada con Docker y Docker Compose para un entorno de desarrollo y despliegue consistente.
+*   **Integración Continua:** Workflows de GitHub Actions que ejecutan tests automáticamente en cada `push` y `pull request` a la rama `main`.
 
-## Arquitectura y Tecnologías.
+## Arquitectura y Tecnologías
 
-| Componente | Tecnología | Descripción |
-| :--- | :--- | :--- |
-| **Backend** | `Python`, `Flask`, `Gunicorn` | Provee la API REST para votar y consultar resultados. |
-| **Base de Datos** | `PostgreSQL` | Almacena los votos de forma persistente. |
-| **Dependencias Python** | `psycopg2-binary`, `pytest` | Driver de base de datos y framework de testing. |
-| **CI/CD** | `GitHub Actions` | Automatización de pruebas y (futuramente) builds. |
-| **Frontend (Futuro)** | `HTML`, `CSS`, `JavaScript`, `Nginx` | Interfaz de usuario para los votantes. |
-| **Orquestación (Futuro)**| `Docker`, `Docker Compose` | Para un entorno de desarrollo y despliegue consistente. |
+| Componente      | Tecnología                  | Descripción                                                 |
+| :-------------- | :-------------------------- | :---------------------------------------------------------- |
+| **Backend**     | `Python`, `Flask`, `Gunicorn` | Provee la API REST para votar y consultar resultados.       |
+| **Frontend**    | `HTML`, `CSS`, `JavaScript` | Interfaz de usuario para los votantes.                      |
+| **Servidor Web**| `Nginx`                     | Sirve el frontend estático y actúa como proxy inverso para la API. |
+| **Base de Datos** | `PostgreSQL`                | Almacena los votos de forma persistente.                    |
+| **CI/CD**       | `GitHub Actions`            | Automatización de pruebas y builds.                         |
+| **Orquestación**| `Docker`, `Docker Compose`  | Para un entorno de desarrollo y despliegue consistente.     |
 
 ## Estructura del Proyecto
 
 ```
 practica-2/
-├── .github/workflows/main.yml  # Workflow de CI con GitHub Actions
+├── .github/workflows/          # Workflows de CI con GitHub Actions
+│   ├── backend-ci.yml
+│   └── frontend-ci.yml
 ├── backend/
 │   ├── app.py                  # Aplicación principal de Flask (API)
 │   ├── requirements.txt        # Dependencias de Python
 │   └── tests/
 │       └── test_api.py         # Pruebas para la API
-├── frontend/                   # (Aún no desarrollado)
-├── .gitignore                  # Archivos ignorados por Git
+├── frontend/
+│   ├── www/
+│   │   ├── index.html
+│   │   ├── css/styles.css
+│   │   └── js/app.js
+│   ├── nginx/
+│   │   └── default.conf
+│   └── Dockerfile
+├── .gitignore
+├── docker-compose.yml          # Orquestación de contenedores
 ├── init.sql                    # Script de inicialización para la BD
 └── README.md                   # Este archivo
 ```
 
-## Cómo Empezar (Backend Actual)
+## Cómo Empezar
 
 ### Prerrequisitos
 
-*   Python 3.9+
-*   PostgreSQL instalado y corriendo.
-*   Git
+*   Docker
+*   Docker Compose
 
-### Instalación y Configuración
+### Ejecución
 
 1.  **Clona el repositorio:**
     ```bash
@@ -53,61 +62,49 @@ practica-2/
     cd practica-2
     ```
 
-2.  **Instala las dependencias del backend:**
+2.  **Levanta los servicios con Docker Compose:**
     ```bash
-    pip install -r backend/requirements.txt
+    docker-compose up --build
     ```
 
-3.  **Configura la base de datos:**
-    *   Crea una base de datos en PostgreSQL.
-    *   Ejecuta el script `init.sql` para crear la tabla `votes` e inicializar los contadores.
-        ```sql
-        -- Ejemplo con psql
-        psql -U tu_usuario -d tu_base_de_datos -f init.sql
-        ```
+3.  **Accede a la aplicación:**
+    Abre tu navegador y visita `http://localhost`.
 
-4.  **Configura las variables de entorno:**
-    La aplicación se configura mediante variables de entorno. Crea un archivo `.env` en la raíz del proyecto (este archivo está en el `.gitignore`, por lo que no se subirá al repositorio) o expórtalas en tu terminal.
-
-    ```
-    export DB_HOST="localhost"
-    export DB_NAME="votes"
-    export DB_USER="tu_usuario"
-    export DB_PASS="tu_contraseña"
-    ```
-
-### Ejecutar el Backend
-
-Para iniciar el servidor de desarrollo de Flask:
-
-```bash
-export FLASK_APP=backend/app.py
-flask run
-```
-
-La API estará disponible en `http://127.0.0.1:5000`.
+La aplicación estará disponible en el puerto 80. El backend estará disponible en el puerto 5000.
 
 ## API Endpoints
 
-*   `GET /`: **Health Check**
+*   `GET /api/`: **Health Check**
     *   Verifica que la API está en funcionamiento.
     *   **Respuesta:** `{"status": "ok"}`
 
-*   `GET /results`: **Obtener Resultados**
+*   `GET /api/results`: **Obtener Resultados**
     *   Devuelve el conteo actual de votos.
     *   **Respuesta:** `{"cats": 0, "dogs": 0}`
 
-*   `POST /vote/<option>`: **Emitir un Voto**
+*   `POST /api/vote/<option>`: **Emitir un Voto**
     *   Incrementa el contador para la opción especificada (`cats` o `dogs`).
     *   **Respuesta de éxito (201):** `{"ok": true, "voted": "cats"}`
     *   **Respuesta de error (400):** `{"error": "invalid option"}`
 
 ## Pruebas
 
-Para ejecutar las pruebas automatizadas, asegúrate de tener las variables de entorno de la base de datos de prueba configuradas y ejecuta `pytest`:
+Las pruebas se ejecutan automáticamente en el pipeline de CI/CD de GitHub Actions. También puedes ejecutarlas localmente.
+
+### Pruebas del Backend
 
 ```bash
-pytest backend/tests/test_api.py
+# Desde el directorio raíz
+docker-compose exec backend pytest tests/test_api.py
 ```
-.
 
+### Pruebas del Frontend (E2E)
+
+Las pruebas E2E se realizan con Playwright. Para ejecutarlas:
+
+```bash
+# Desde el directorio raíz
+cd frontend
+npm install
+npx playwright test
+```
