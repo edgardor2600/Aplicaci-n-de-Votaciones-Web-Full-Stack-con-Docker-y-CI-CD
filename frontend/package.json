@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "http-server www -P http://localhost:5000",
-    "start:nginx": "nginx -c $(pwd)/nginx/nginx.conf -p $(pwd)",
+    "start:nginx": "nginx -c $(pwd)/nginx/nginx.conf -p $(pwd) -g 'error_log /tmp/nginx_error.log;'",
     "test": "npx playwright test"
   },
   "devDependencies": {
