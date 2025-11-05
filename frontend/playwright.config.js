@@ -11,7 +11,7 @@ module.exports = defineConfig({
   // Usar el navegador Chromium (Chrome) por defecto
   use: {
     browserName: 'chromium',
-    // Capturar screenshots en caso de fallo
+    baseURL: 'http://localhost:8080',
     screenshot: 'only-on-failure',
   },
 
@@ -25,7 +25,8 @@ module.exports = defineConfig({
 
   // Iniciar un servidor web local antes de ejecutar los tests
   webServer: {
-    url: 'http://localhost',
+    command: 'npm run start',
+    port: 8080,
     reuseExistingServer: !process.env.CI,
   },
 });
