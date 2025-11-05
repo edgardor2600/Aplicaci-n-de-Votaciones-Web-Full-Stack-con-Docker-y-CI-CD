@@ -13,20 +13,20 @@ test.describe('Main Page: Structure and Voting', () => {
 
   test('should have the correct title', async ({ page }) => {
     // Verificar que el título de la página es el esperado
-    await expect(page).toHaveTitle('Cats vs Dogs');
+    await expect(page).toHaveTitle('Cats vs Dogs - Votación');
   });
 
   test('should display the main header', async ({ page }) => {
     // Verificar que el header y el logo son visibles
     const header = page.locator('.header .logo');
     await expect(header).toBeVisible();
-    await expect(header).toHaveText('Cats vs Dogs');
+    await expect(header).toHaveText('🐾 Cats vs Dogs');
   });
 
   test('should display both voting cards', async ({ page }) => {
     // Localizar las tarjetas de votación por su atributo data-option
-    const catsCard = page.locator('[data-option="cats"]');
-    const dogsCard = page.locator('[data-option="dogs"]');
+    const catsCard = page.locator('div[data-option="cats"]');
+    const dogsCard = page.locator('div[data-option="dogs"]');
 
     // Verificar que ambas tarjetas son visibles
     await expect(catsCard).toBeVisible();
@@ -55,8 +55,8 @@ test.describe('Main Page: Structure and Voting', () => {
       });
     });
 
-    // Simular clic en la tarjeta de gatos
-    await page.locator('[data-option="cats"]').click();
+    // Simular clic en el botón de votar por gatos
+    await page.locator('button[data-option="cats"]').click();
 
     // Verificar que el indicador de carga aparece
     const loadingOverlay = page.locator('#loading-overlay');
