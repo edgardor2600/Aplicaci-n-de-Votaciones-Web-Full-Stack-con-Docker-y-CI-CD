@@ -140,6 +140,7 @@ jobs:
             fi
             sleep 1
           done
+          # IMPORTANTE: ajusta la ruta si tu init.sql no está en la raíz
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
       # === BLOQUE MEJORADO: arranque backend + espera + smoke test ===
@@ -152,6 +153,7 @@ jobs:
           POSTGRES_DB: votes
 
           DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
           DB_USER: user
           DB_PASS: password
           DB_PASSWORD: password
@@ -182,13 +184,13 @@ jobs:
 
       - name: Backend smoke test (vote + results)
         run: |
-          echo "🔎 GET /api/results (before)"
+          echo "🔎 BEFORE: /api/results"
           curl -i http://localhost:5000/api/results || true
           echo
           echo "🗳️  POST /api/vote/cats"
           curl -i -X POST http://localhost:5000/api/vote/cats || true
           echo
-          echo "🔎 GET /api/results (after)"
+          echo "🔎 AFTER: /api/results"
           curl -i http://localhost:5000/api/results || true
           echo
       # === FIN BLOQUE MEJORADO ===
