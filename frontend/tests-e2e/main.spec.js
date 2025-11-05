@@ -1,10 +1,8 @@
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost';
-
 test.describe('Main Page: Structure and Voting', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto('/');
     // Esperar a que la aplicación esté lista y el toast inicial desaparezca
     await page.waitForTimeout(2500);
   });
