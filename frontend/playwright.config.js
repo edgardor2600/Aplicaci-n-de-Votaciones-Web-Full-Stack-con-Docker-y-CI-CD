@@ -25,7 +25,7 @@ module.exports = defineConfig({
 
   // Iniciar un servidor web local antes de ejecutar los tests
   webServer: {
-    command: 'npm run start',
+    command: process.env.CI ? 'npm run start:nginx' : 'npm run start',
     port: 8080,
     reuseExistingServer: !process.env.CI,
   },

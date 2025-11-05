@@ -206,6 +206,13 @@ jobs:
           echo "📦 Installing frontend dependencies..."
           npm ci
 
+      - name: Install Nginx (for CI)
+        if: env.CI == 'true'
+        run: |
+          echo "🌐 Installing Nginx for CI..."
+          sudo apt-get update
+          sudo apt-get install -y nginx
+
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
         id: playwright-cache
