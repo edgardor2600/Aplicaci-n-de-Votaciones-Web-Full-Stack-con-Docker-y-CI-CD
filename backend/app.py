@@ -52,11 +52,11 @@ def init_db_command():
     ensure_schema()
     click.echo("Initialized the database.")
 
-@app.route("/")
+@app.route("/api/")
 def health():
     return jsonify({"status": "ok"})
 
-@app.route("/results", methods=["GET"])
+@app.route("/api/results", methods=["GET"])
 def results():
     conn = get_db()
     with conn.cursor() as cur:
@@ -67,7 +67,7 @@ def results():
         data[rid] = count
     return jsonify(data)
 
-@app.route("/vote/<option>", methods=["POST"])
+@app.route("/api/vote/<option>", methods=["POST"])
 def vote(option):
     option = option.lower()
     if option not in ("cats", "dogs"):
