@@ -38,8 +38,9 @@ test.describe('Main Page: Structure and Voting', () => {
     // 1. Navegar a la página
     await page.goto('/');
 
-    // Esperar a que la app se inicialice y detener el auto-refresh
-    await page.waitForSelector('#toast-container .toast.toast--success');
+    // Esperar a que los elementos principales estén visibles (más confiable que esperar toast)
+    await page.waitForSelector('#cats-count');
+    await page.waitForSelector('#dogs-count');
     await page.evaluate(() => window.app.stopAutoRefresh());
 
     // 2. Obtener los conteos iniciales (pueden ser > 0 por votos previos)
