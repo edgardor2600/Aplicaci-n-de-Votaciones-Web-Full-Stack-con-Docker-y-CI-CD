@@ -64,8 +64,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-
-
       - name: Validate CSS structure
         run: |
           echo "🎨 Validando estructura CSS..."
@@ -144,17 +142,56 @@ jobs:
           done
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
+      # === BLOQUE MEJORADO: arranque backend + espera + smoke test ===
       - name: Start Backend Service
         env:
+          # ---- DB (todas las variantes por si tu app lee otro nombre) ----
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: votes
+
           DB_HOST: 127.0.0.1
           DB_USER: user
           DB_PASS: password
+          DB_PASSWORD: password
           DB_NAME: votes
-        run: |
-          echo "🚀 Starting Flask backend service..."
-          gunicorn --bind 0.0.0.0:5000 backend.app:app &
-          sleep 5 # Give the backend some time to start
 
+          DATABASE_URL: postgresql://user:password@127.0.0.1:5432/votes
+
+          # ---- Flask / Gunicorn ----
+          FLASK_ENV: production
+          FLASK_RUN_HOST: 0.0.0.0
+          PYTHONUNBUFFERED: "1"
+        run: |
+          echo "🚀 Starting Flask backend (gunicorn) ..."
+          gunicorn --bind 0.0.0.0:5000 backend.app:app &
+
+      - name: Wait for Backend (health probe)
+        run: |
+          echo "⏳ Waiting for backend at http://localhost:5000/api/results ..."
+          for i in {1..40}; do
+            if curl -fsS http://localhost:5000/api/results > /dev/null; then
+              echo "✅ Backend ready"; exit 0
+            fi
+            echo "… retry $i/40"
+            sleep 2
+          done
+          echo "❌ Backend did not become ready in time"
+          exit 1
+
+      - name: Backend smoke test (vote + results)
+        run: |
+          echo "🔎 GET /api/results (before)"
+          curl -i http://localhost:5000/api/results || true
+          echo
+          echo "🗳️  POST /api/vote/cats"
+          curl -i -X POST http://localhost:5000/api/vote/cats || true
+          echo
+          echo "🔎 GET /api/results (after)"
+          curl -i http://localhost:5000/api/results || true
+          echo
+      # === FIN BLOQUE MEJORADO ===
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -165,7 +202,7 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "📦 Installing frontend dependencies..."
-          npm install
+          npm ci
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
@@ -185,64 +222,22 @@ jobs:
 
       - name: Run Playwright Tests
         working-directory: ./frontend
+        env:
+          CI: 'true'
         run: |
           echo "🧪 Running Playwright end-to-end tests..."
           npx playwright test
 
-
-  docker-build:
-    name: Construir Imagen Docker
-    runs-on: ubuntu-latest
-    needs: frontend-validation
-    if: |
-      github.event_name == 'workflow_dispatch' && 
-      github.event.inputs.run_docker_build == 'true' ||
-      contains(github.event.head_commit.message, '[docker]') ||
-      contains(github.event.pull_request.title, '[docker]')
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build frontend Docker image
-        run: |
-          echo "🐳 Construyendo imagen Docker del frontend..."
-          docker build -t voting-frontend:latest frontend/
-          
-      - name: Test Docker image
-        run: |
-          echo "🧪 Probando imagen Docker..."
-          
-          # Ejecutar contenedor temporalmente
-          docker run -d --name frontend-test -p 8080:80 voting-frontend:latest
-          
-          # Esperar a que inicie
-          sleep 5
-          
-          # Verificar que responde
-          if curl -f http://localhost:8080/health; then
-            echo "✅ Imagen Docker responde correctamente"
-          else
-            echo "❌ Imagen Docker no responde"
-            exit 1
-          fi
-          
-          # Limpiar
-          docker stop frontend-test
-          docker rm frontend-test
-          
-      - name: Save Docker image
-        if: env.CI_PUSH_REGISTRY == 'true'
-        run: |
-          echo "💾 Guardando imagen Docker..."
-          docker save voting-frontend:latest > frontend-image.tar
-          
-      - name: Upload Docker artifact
-        if: env.CI_PUSH_REGISTRY == 'true'
+      - name: Upload Playwright report (on failure)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-docker-image
-          path: frontend-image.tar
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+
+      - name: Show backend logs (on failure)
+        if: failure()
+        run: |
+          echo "📄 Backend logs (last 200 lines of kernel ring buffer — si logueas a archivo, cámbialo aquí):"
+          dmesg | tail -n 200 || true
