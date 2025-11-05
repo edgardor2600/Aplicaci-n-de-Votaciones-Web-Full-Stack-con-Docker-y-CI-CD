@@ -4,7 +4,7 @@
   "description": "Frontend for the Cats vs Dogs voting application.",
   "private": true,
   "scripts": {
-    "start": "http-server www",
+    "start": "http-server www -P http://localhost:5000",
     "test": "npx playwright test"
   },
   "devDependencies": {
