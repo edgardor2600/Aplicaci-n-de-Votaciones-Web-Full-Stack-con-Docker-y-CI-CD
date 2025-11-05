@@ -11,7 +11,6 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
-  # Ejecución manual para frontend
   workflow_dispatch:
     inputs:
       run_docker_build:
@@ -140,41 +139,36 @@ jobs:
             fi
             sleep 1
           done
-          # IMPORTANTE: ajusta la ruta si tu init.sql no está en la raíz
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
-      # === BLOQUE MEJORADO: arranque backend + espera + smoke test ===
       - name: Start Backend Service
         env:
-          # ---- DB (todas las variantes por si tu app lee otro nombre) ----
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_USER: user
           POSTGRES_PASSWORD: password
           POSTGRES_DB: votes
-
           DB_HOST: 127.0.0.1
           DB_PORT: "5432"
           DB_USER: user
           DB_PASS: password
           DB_PASSWORD: password
           DB_NAME: votes
-
           DATABASE_URL: postgresql://user:password@127.0.0.1:5432/votes
-
-          # ---- Flask / Gunicorn ----
           FLASK_ENV: production
           FLASK_RUN_HOST: 0.0.0.0
           PYTHONUNBUFFERED: "1"
         run: |
-          echo "🚀 Starting Flask backend (gunicorn) ..."
-          gunicorn --bind 0.0.0.0:5000 backend.app:app &
+          echo "🚀 Starting Flask backend (gunicorn)..."
+          gunicorn --bind 0.0.0.0:5000 backend.app:app --log-level debug &
+          echo $! > backend.pid
 
-      - name: Wait for Backend (health probe)
+      - name: Wait for Backend
         run: |
-          echo "⏳ Waiting for backend at http://localhost:5000/api/results ..."
+          echo "⏳ Waiting for backend at http://localhost:5000/api/results..."
           for i in {1..40}; do
-            if curl -fsS http://localhost:5000/api/results > /dev/null; then
-              echo "✅ Backend ready"; exit 0
+            if curl -fsS http://localhost:5000/api/results > /dev/null 2>&1; then
+              echo "✅ Backend ready"
+              exit 0
             fi
             echo "… retry $i/40"
             sleep 2
@@ -182,43 +176,36 @@ jobs:
           echo "❌ Backend did not become ready in time"
           exit 1
 
-      - name: Backend smoke test (vote + results)
+      - name: Backend smoke test
         run: |
-          echo "🔎 BEFORE: /api/results"
-          curl -i http://localhost:5000/api/results || true
-          echo
-          echo "🗳️  POST /api/vote/cats"
-          curl -i -X POST http://localhost:5000/api/vote/cats || true
-          echo
-          echo "🔎 AFTER: /api/results"
-          curl -i http://localhost:5000/api/results || true
-          echo
-      # === FIN BLOQUE MEJORADO ===
+          echo "🔎 Testing backend endpoints..."
+          echo "GET /api/results:"
+          curl -i http://localhost:5000/api/results
+          echo ""
+          echo "POST /api/vote/cats:"
+          curl -i -X POST http://localhost:5000/api/vote/cats
+          echo ""
+          echo "GET /api/results (after vote):"
+          curl -i http://localhost:5000/api/results
+          echo ""
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install Dependencies
+      - name: Install Frontend Dependencies
         working-directory: ./frontend
         run: |
           echo "📦 Installing frontend dependencies..."
           npm ci
-
-      - name: Install Nginx (for CI)
-        if: env.CI == 'true'
-        run: |
-          echo "🌐 Installing Nginx for CI..."
-          sudo apt-get update
-          sudo apt-get install -y nginx
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') || hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
@@ -227,7 +214,7 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "🌐 Installing Playwright browsers..."
-          npx playwright install --with-deps
+          npx playwright install --with-deps chromium
 
       - name: Run Playwright Tests
         working-directory: ./frontend
@@ -245,8 +232,18 @@ jobs:
           path: frontend/playwright-report
           if-no-files-found: ignore
 
-      - name: Show backend logs (on failure)
+      - name: Show logs (on failure)
         if: failure()
         run: |
-          echo "📄 Backend logs (last 200 lines of kernel ring buffer — si logueas a archivo, cámbialo aquí):"
-          dmesg | tail -n 200 || true
+          echo "📄 Backend process status:"
+          if [ -f backend.pid ]; then
+            PID=$(cat backend.pid)
+            if ps -p $PID > /dev/null 2>&1; then
+              echo "Backend still running (PID: $PID)"
+            else
+              echo "Backend process died (PID: $PID)"
+            fi
+          fi
+          echo ""
+          echo "📄 Attempting to fetch backend logs..."
+          curl -v http://localhost:5000/api/results || true

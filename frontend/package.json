@@ -4,9 +4,11 @@
   "description": "Frontend for the Cats vs Dogs voting application.",
   "private": true,
   "scripts": {
-    "start": "http-server www -P http://localhost:5000",
-    "start:nginx": "nginx -c $(pwd)/nginx/nginx-ci.conf -p $(pwd)",
-    "test": "npx playwright test"
+    "start": "http-server www -p 8080 -P http://localhost:5000 --cors",
+    "test": "npx playwright test",
+    "test:debug": "npx playwright test --debug",
+    "test:ui": "npx playwright test --ui",
+    "test:report": "npx playwright show-report"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",

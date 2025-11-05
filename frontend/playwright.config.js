@@ -5,14 +5,20 @@ module.exports = defineConfig({
   // Directorio donde se encuentran los tests
   testDir: './tests-e2e',
 
-  // Prevenir que los tests se ejecuten en paralelo por ahora
+  // Timeout extendido para CI
+  timeout: 30000,
+  
+  // Prevenir que los tests se ejecuten en paralelo
   workers: 1,
 
-  // Usar el navegador Chromium (Chrome) por defecto
+  // Configuración global
   use: {
     browserName: 'chromium',
     baseURL: 'http://localhost:8080',
     screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+    // Tiempo extra para operaciones de red
+    actionTimeout: 10000,
   },
 
   // Proyectos para diferentes navegadores
@@ -23,10 +29,20 @@ module.exports = defineConfig({
     },
   ],
 
-  // Iniciar un servidor web local antes de ejecutar los tests
+  // Configuración del servidor web
   webServer: {
-    command: process.env.CI ? 'npm run start:nginx' : 'npm run start',
+    // Usar http-server con proxy al backend
+    command: 'npx http-server www -p 8080 -P http://localhost:5000 --cors',
     port: 8080,
+    timeout: 60000,
     reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
+
+  // Configuración de reportes
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }]
+  ],
 });
