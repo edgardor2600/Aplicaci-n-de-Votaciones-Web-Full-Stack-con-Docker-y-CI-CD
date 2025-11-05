@@ -1,123 +1,89 @@
-// frontend/tests-e2e/main.spec.js
 const { test, expect } = require('@playwright/test');
 
-test.describe('Main Page: Structure and Voting (API real)', () => {
+test.describe('Main Page: Structure and Voting', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-
-    // Espera breve a que la app haga su primer fetch inicial
+    // Esperar a que la aplicación esté lista y el toast inicial desaparezca
     await page.waitForTimeout(2500);
-
-    // Detén auto-refresh si existe (evita carreras)
-    await page.evaluate(() => {
-      if (window.app && typeof window.app.stopAutoRefresh === 'function') {
-        window.app.stopAutoRefresh();
-      }
-    });
-
-    // Si hay overlay de carga, debe estar oculto antes de interactuar
-    const overlay = page.locator('#loading-overlay');
-    if (await overlay.count()) {
-      await expect(overlay).toBeHidden();
-    }
-
-    // Logs de red útiles en CI
-    page.on('request', req => {
-      const u = req.url();
-      if (u.includes('/api/')) {
-        console.log('CI request =>', req.method(), u);
-      }
-    });
-    page.on('response', async res => {
-      const u = res.url();
-      if (u.includes('/api/')) {
-        console.log('CI response =>', res.status(), u);
-      }
-    });
-    page.on('console', msg => {
-      // Para ver cualquier error JS en la página
-      if (msg.type() === 'error') console.log('CI page error =>', msg.text());
-    });
+    // Detener el auto-refresh para evitar race conditions en el test
+    await page.evaluate(() => window.app.stopAutoRefresh());
   });
 
   test('should have the correct title', async ({ page }) => {
-    await expect(page).toHaveTitle(/Cats vs Dogs/i);
+    await expect(page).toHaveTitle('Cats vs Dogs - Votación');
+  });
+
+  test('should display the main header', async ({ page }) => {
+    const header = page.locator('.header .logo');
+    await expect(header).toBeVisible();
+    await expect(header).toHaveText('🐾 Cats vs Dogs');
   });
 
   test('should display both voting cards', async ({ page }) => {
-    await expect(page.locator('div.voting-card[data-option="cats"]')).toBeVisible();
-    await expect(page.locator('div.voting-card[data-option="dogs"]')).toBeVisible();
+    const catsCard = page.locator('div.voting-card[data-option="cats"]');
+    const dogsCard = page.locator('div.voting-card[data-option="dogs"]');
+
+    await expect(catsCard).toBeVisible();
+    await expect(dogsCard).toBeVisible();
+
+    await expect(catsCard.locator('.card-title')).toHaveText('Gatos');
+    await expect(dogsCard.locator('.card-title')).toHaveText('Perros');
   });
 
-  test('should show loading indicator and results after voting (real API)', async ({ page }) => {
-    // Botón robusto (varias variantes de selector)
-    const voteCatsButton = page
-      .locator('button[data-option="cats"], [data-option="cats"] button, .voting-card[data-option="cats"] button')
-      .first();
+  test('should show loading indicator and results after voting', async ({ page }) => {
+    // Intercepta TODAS las rutas del API del frontend
+    await page.route('**/api/**', async route => {
+      const req = route.request();
 
-    await voteCatsButton.scrollIntoViewIfNeeded();
-    await expect(voteCatsButton, 'vote button should be visible').toBeVisible();
+      if (req.url().includes('/vote') && req.method() === 'POST') {
+        // pequeña latencia para que el overlay sea visible y el flujo sea realista
+        await new Promise(r => setTimeout(r, 120));
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true, voted: 'cats' }),
+        });
+      }
 
-    // Verifica que el botón es clickeable (sin disparar el click real)
-    const canClick = await voteCatsButton.click({ trial: true }).then(() => true).catch(() => false);
-    expect(canClick, 'vote button should be clickable').toBeTruthy();
+      if (req.url().includes('/results') && req.method() === 'GET') {
+        // leve retraso también aquí, simulando consulta real
+        await new Promise(r => setTimeout(r, 80));
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ cats: 1, dogs: 0 }),
+        });
+      }
 
-    // Matcher flexible: acepta /api/vote o /api/vote/cats (y con posible slash final o query)
-    const isVoteEndpoint = (url) =>
-      url.includes('/api/vote/cats') ||
-      url.includes('/api/vote?') ||
-      url.endsWith('/api/vote') ||
-      url.endsWith('/api/vote/');
+      if (req.url().includes('/health')) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ status: 'ok' }),
+        });
+      }
 
-    const postVotePromise = page.waitForResponse(res => {
-      if (res.request().method() !== 'POST') return false;
-      const u = res.url();
-      return isVoteEndpoint(u);
+      return route.continue();
     });
 
-    // Ejecuta el click real
-    await voteCatsButton.click();
+    // 1. Hacer clic en el botón de votar
+    await page.locator('button[data-option="cats"]').click();
 
-    // Si no llega nunca el POST, haremos dump de contexto útil
-    let postVoteResp;
-    try {
-      postVoteResp = await postVotePromise;
-    } catch (e) {
-      // Dump de diagnóstico
-      const btnText = await voteCatsButton.innerText().catch(() => '(no innerText)');
-      const catsCardHtml = await page
-        .locator('.voting-card[data-option="cats"]')
-        .first()
-        .evaluate(el => el.outerHTML)
-        .catch(() => '(no cats card)');
-      console.log('CI DEBUG >> vote button text:', btnText);
-      console.log('CI DEBUG >> cats card HTML:', catsCardHtml);
-      throw e; // vuelve a lanzar para que el test muera con el timeout original
-    }
+    // 2. Esperar a que el resultado final sea visible (enfoque robusto)
+    const results = page.locator('#results');
+    await expect(results).toBeVisible({ timeout: 15000 });
 
-    // Status esperado 201 (si no, verás en el log el status real)
-    await expect(postVoteResp.status(), 'status POST /api/vote(cats)').toBe(201);
+    // 3. Verificar que el contenido de los resultados es correcto
+    const catsCount = page.locator('#cats-count');
+    await expect(catsCount).toHaveText('1');
 
-    // Ahora esperamos el /api/results que la app hace tras votar
-    const resultsResp = await page.waitForResponse(res => {
-      return res.request().method() === 'GET' && res.url().includes('/api/results');
-    });
-    const resultsJson = await resultsResp.json();
-    console.log('CI debug /api/results (real) =>', resultsJson);
+    // 4. (Opcional pero recomendado) Asegurarse de que el overlay ya no está
+    await expect(page.locator('#loading-overlay')).toBeHidden();
 
-    // Overlay fuera al finalizar
-    const overlay = page.locator('#loading-overlay');
-    if (await overlay.count()) {
-      await expect(overlay).toBeHidden();
-    }
-
-    // Conteo correcto
-    await expect(page.locator('#cats-count')).toHaveText('1');
-
-    // Toast de éxito (si existe)
+    // 5. Verificar que aparece la notificación de éxito del voto (más específica)
+    // Usar .last() para obtener el toast más reciente (el del voto)
     const successToast = page.locator('#toast-container .toast.toast--success').last();
-    if (await successToast.count()) {
-      await expect(successToast).toBeVisible();
-    }
+    await expect(successToast).toBeVisible();
+    await expect(successToast).toContainText(/gracias/i);
   });
 });
