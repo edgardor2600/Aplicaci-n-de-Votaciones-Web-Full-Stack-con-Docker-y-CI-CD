@@ -3,8 +3,10 @@ import time
 import psycopg2
 import click
 from flask import Flask, jsonify, g
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_NAME = os.getenv("DB_NAME", "votes")
