@@ -64,7 +64,8 @@ test.describe('Main Page: Structure and Voting', () => {
 
     // Verificar que el toast de notificación aparece con el mensaje correcto
     const toast = page.locator('.toast.is-success');
-    await toast.waitFor({ state: 'visible' });
+    await toast.waitFor({ state: 'attached' });
+    await expect(toast).toHaveClass(/show/);
     await expect(toast).toBeVisible();
     await expect(toast).toContainText('¡Gracias por tu voto!');
 
