@@ -142,46 +142,45 @@ class VotingApp {
     }
 
     /**
-     * Envía un voto
-     * @param {string} option - Opción a votar ('cats' o 'dogs')
-     */
-    async vote(option) {
-        this.loadingOverlay.show('Enviando voto...');
-        let response;
+ * Envía un voto
+ * @param {string} option - Opción a votar ('cats' o 'dogs')
+ */
+async vote(option) {
+    this.loadingOverlay.show('Enviando voto...');
+    let response;
+    
+    try {
+        response = await apiClient.vote(option);
         
-        try {
-            response = await apiClient.vote(option);
-            
-            if (response.ok) {
-                // Actualizar visual del card voteado
-                const votedCard = this.votingCards.find(card => card.option === option);
-                if (votedCard) {
-                    votedCard.updateVisualState('success');
-                }
-                
-                // Actualizar resultados inmediatamente
-                await this.refreshResults();
-                
-            } else {
-                throw new Error(response.error || 'Error al enviar voto');
+        if (response.ok) {
+            // Actualizar visual del card voteado
+            const votedCard = this.votingCards.find(card => card.option === option);
+            if (votedCard) {
+                votedCard.updateVisualState('success');
             }
             
-        } catch (error) {
-            const userMessage = apiErrorHandler.handle
-                ? apiErrorHandler.handle(error)
-                : (error?.message || 'Error al enviar voto');
-            this.showToast(userMessage, 'error');
-            throw new Error(userMessage);
-        } finally {
-            console.log("Ejecutando finally en vote()");
-            // 🔒 Siempre ocultar el overlay
-            if (this.loadingOverlay) {
-                this.loadingOverlay.hide();
-            }
+            // ✅ CRÍTICO: Esperar a que refreshResults termine completamente
+            await this.refreshResults();
+            
+        } else {
+            throw new Error(response.error || 'Error al enviar voto');
         }
-        return response;
+        
+    } catch (error) {
+        const userMessage = apiErrorHandler.handle
+            ? apiErrorHandler.handle(error)
+            : (error?.message || 'Error al enviar voto');
+        this.showToast(userMessage, 'error');
+        throw error; // ✅ Re-lanzar el error original, no crear uno nuevo
+    } finally {
+        console.log("Ejecutando finally en vote()");
+        // ✅ Ahora el overlay se oculta DESPUÉS de que refreshResults termine
+        if (this.loadingOverlay) {
+            this.loadingOverlay.hide();
+        }
     }
-
+    return response;
+}
     /**
      * Actualiza los resultados desde el servidor
      */
