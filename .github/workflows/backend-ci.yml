@@ -1,0 +1,105 @@
+name: CI - Backend Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'init.sql'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'init.sql'
+  # Ejecución manual para backend
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Forzar ejecución de tests backend'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  backend-tests:
+    name: Tests del Backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: votes
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U user -d votes"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install backend dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Wait for Postgres & init schema
+        env:
+          PGPASSWORD: password
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U user -d votes; then
+              break
+            fi
+            sleep 1
+          done
+          psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
+
+      - name: Run backend tests
+        env:
+          PGPASSWORD: password
+          DB_HOST: 127.0.0.1
+          DB_USER: user
+          DB_PASS: password
+          DB_NAME: votes
+        run: |
+          echo "🧪 Ejecutando tests del backend..."
+          pytest backend/tests/test_api.py -v
+          echo "✅ Tests del backend completados exitosamente"
+
+      - name: Test Flask app startup
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: user
+          DB_PASS: password
+          DB_NAME: votes
+          FLASK_APP: backend/app.py
+        run: |
+          echo "🚀 Verificando que la aplicación Flask inicia correctamente..."
+          python -c "from backend.app import app; print('✅ Aplicación Flask carga correctamente')"
+          
+      - name: Validate requirements.txt
+        run: |
+          echo "📋 Verificando que requirements.txt esté actualizado..."
+          if [ -f "backend/requirements.txt" ]; then
+            echo "✅ requirements.txt encontrado"
+            wc -l backend/requirements.txt
+          else
+            echo "❌ requirements.txt no encontrado"
+            exit 1
+          fi
