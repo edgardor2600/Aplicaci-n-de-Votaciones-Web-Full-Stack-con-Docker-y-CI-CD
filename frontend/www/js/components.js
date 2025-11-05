@@ -15,34 +15,34 @@ class VotingCard {
         if (this.button) {
             this.button.addEventListener('click', () => this.handleVote());
         }
+
+        // Efecto visual al pasar el mouse
+        this.element.addEventListener('mouseenter', () => {
+            this.element.classList.add('pulse');
+        });
+        this.element.addEventListener('mouseleave', () => {
+            this.element.classList.remove('pulse');
+        });
     }
 
     async handleVote() {
         this.button.disabled = true;
-        this.button.textContent = 'Enviando voto...';
-        
+        this.button.textContent = 'Enviando...';
+
         try {
             const response = await app.vote(this.option);
-            this.showSuccessMessage();
-            app.refreshResults(); // Actualizar resultados después del voto
+            if (response?.ok) {
+                const message = this.option === 'cats'
+                    ? '¡Gracias por votar por los Gatos! 🐱'
+                    : '¡Gracias por votar por los Perros! 🐶';
+                app.showToast(message, 'success');
+            }
         } catch (error) {
-            this.showErrorMessage(error.message);
+            app.showToast(error.message || 'Error al enviar voto', 'error');
         } finally {
             this.button.disabled = false;
             this.button.textContent = `Votar por ${this.option === 'cats' ? 'Gatos' : 'Perros'}`;
         }
-    }
-
-    showSuccessMessage() {
-        const message = this.option === 'cats' 
-            ? '¡Gracias por votar por los Gatos! 🐱' 
-            : '¡Gracias por votar por los Perros! 🐶';
-        app.showToast(message, 'success');
-    }
-
-    showErrorMessage(error) {
-        const message = `Error al enviar voto: ${error}`;
-        app.showToast(message, 'error');
     }
 
     // Método para actualizar estado visual
@@ -51,8 +51,13 @@ class VotingCard {
         
         if (state === 'success') {
             setTimeout(() => {
-                this.element.classList.add('pulse');
+                this.element.classList.add('success');
             }, 100);
+        } else if (state === 'error') {
+            this.element.classList.add('error');
+            setTimeout(() => {
+                this.element.classList.remove('error');
+            }, 1500);
         }
     }
 }
@@ -70,68 +75,38 @@ class ResultsDisplay {
         };
     }
 
-    /**
-     * Actualiza la visualización de resultados
-     * @param {object} results - {cats: number, dogs: number}
-     */
     updateResults(results) {
-        const cats = results.cats || 0;
-        const dogs = results.dogs || 0;
+        const cats = results.cats ?? 0;
+        const dogs = results.dogs ?? 0;
         const total = cats + dogs;
 
-        // Actualizar contadores
         this.updateCount(this.elements.catsCount, cats);
         this.updateCount(this.elements.dogsCount, dogs);
         this.updateCount(this.elements.totalVotes, total);
 
-        // Actualizar porcentajes
         const catsPercentage = this.calculatePercentage(cats, total);
         const dogsPercentage = this.calculatePercentage(dogs, total);
 
-        this.elements.catsPercentage.textContent = `${catsPercentage}%`;
-        this.elements.dogsPercentage.textContent = `${dogsPercentage}%`;
+        if (this.elements.catsPercentage) {
+            this.elements.catsPercentage.textContent = `${catsPercentage}%`;
+        }
+        if (this.elements.dogsPercentage) {
+            this.elements.dogsPercentage.textContent = `${dogsPercentage}%`;
+        }
 
-        // Actualizar barras de progreso
-        this.updateBar(this.elements.catsBar, catsPercentage);
-        this.updateBar(this.elements.dogsBar, dogsPercentage);
+        if (this.elements.catsBar) {
+            this.elements.catsBar.style.width = `${catsPercentage}%`;
+        }
+        if (this.elements.dogsBar) {
+            this.elements.dogsBar.style.width = `${dogsPercentage}%`;
+        }
     }
 
-    /**
-     * Actualiza un contador con animación
-     * @param {HTMLElement} element - Elemento DOM
-     * @param {number} value - Valor nuevo
-     */
     updateCount(element, value) {
-        const currentValue = parseInt(element.textContent) || 0;
-        const increment = Math.ceil((value - currentValue) / 20);
-        
-        if (currentValue === value) return;
-
-        const timer = setInterval(() => {
-            const newValue = Math.min(currentValue + increment, value);
-            element.textContent = APIClient.formatNumber(newValue);
-            
-            if (newValue >= value) {
-                clearInterval(timer);
-            }
-        }, 50);
+        if (!element) return;
+        element.textContent = String(value);
     }
 
-    /**
-     * Actualiza el ancho de una barra de progreso
-     * @param {HTMLElement} element - Elemento de la barra
-     * @param {number} percentage - Porcentaje (0-100)
-     */
-    updateBar(element, percentage) {
-        element.style.width = `${percentage}%`;
-    }
-
-    /**
-     * Calcula el porcentaje
-     * @param {number} count - Cantidad
-     * @param {number} total - Total
-     * @returns {number} Porcentaje
-     */
     calculatePercentage(count, total) {
         if (total === 0) return 0;
         return Math.round((count / total) * 100);
@@ -144,12 +119,6 @@ class ToastNotification {
         this.toasts = [];
     }
 
-    /**
-     * Muestra una notificación toast
-     * @param {string} message - Mensaje
-     * @param {string} type - Tipo: 'success', 'error', 'warning', 'info'
-     * @param {number} duration - Duración en ms (por defecto 3000)
-     */
     show(message, type = 'info', duration = 3000) {
         const toast = this.createToast(message, type);
         this.container.appendChild(toast);
@@ -164,15 +133,13 @@ class ToastNotification {
         }, duration);
     }
 
-    /**
-     * Crea un elemento toast
-     * @param {string} message - Mensaje
-     * @param {string} type - Tipo de notificación
-     * @returns {HTMLElement} Elemento toast
-     */
     createToast(message, type) {
         const toast = document.createElement('div');
         toast.className = `toast toast--${type}`;
+        // Accesibilidad + testing estable
+        toast.setAttribute('data-testid', 'toast');
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
         
         const icons = {
             success: '✅',
@@ -186,10 +153,9 @@ class ToastNotification {
                 <span class="toast-icon">${icons[type] || icons.info}</span>
                 <span class="toast-message">${message}</span>
             </div>
-            <button class="toast-close">&times;</button>
+            <button class="toast-close" aria-label="Cerrar notificación">&times;</button>
         `;
 
-        // Event listener para cerrar manualmente
         const closeBtn = toast.querySelector('.toast-close');
         closeBtn.addEventListener('click', () => {
             this.removeToast(toast);
@@ -198,28 +164,16 @@ class ToastNotification {
         return toast;
     }
 
-    /**
-     * Remueve un toast con animación
-     * @param {HTMLElement} toast - Elemento toast
-     */
     removeToast(toast) {
         toast.classList.add('removing');
-        
         setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
+            toast.remove();
             this.toasts = this.toasts.filter(t => t !== toast);
         }, 300);
     }
 
-    /**
-     * Limpia todos los toasts
-     */
     clear() {
-        this.toasts.forEach(toast => {
-            this.removeToast(toast);
-        });
+        this.toasts.forEach(toast => this.removeToast(toast));
     }
 }
 
@@ -229,37 +183,33 @@ class LoadingOverlay {
         this.isVisible = false;
     }
 
-    /**
-     * Muestra el overlay de carga
-     * @param {string} message - Mensaje opcional
-     */
     show(message = 'Cargando...') {
+        console.log('LoadingOverlay.show() called with message:', message);
         const text = this.overlay.querySelector('.loading-text');
-        if (text) {
-            text.textContent = message;
-        }
+        if (text) text.textContent = message;
+        // ✔️ fuerza visibilidad tanto por clase como por estilo inline
         this.overlay.classList.add('show');
+        this.overlay.style.display = 'flex';
+        this.overlay.setAttribute('aria-hidden', 'false');
         this.isVisible = true;
     }
 
-    /**
-     * Oculta el overlay de carga
-     */
     hide() {
-        this.overlay.classList.remove('show');
-        this.isVisible = false;
+        console.log('LoadingOverlay.hide() called');
+        if (this.overlay) {
+            // ✔️ fuerza ocultamiento por clase y por estilo inline
+            this.overlay.classList.remove('show');
+            this.overlay.style.display = 'none';
+            this.overlay.setAttribute('aria-hidden', 'true');
+            this.isVisible = false;
+        }
     }
 
-    /**
-     * Verifica si el overlay está visible
-     * @returns {boolean}
-     */
     isShowing() {
         return this.isVisible;
     }
 }
 
-// Exportar clases para uso global
 window.VotingCard = VotingCard;
 window.ResultsDisplay = ResultsDisplay;
 window.ToastNotification = ToastNotification;

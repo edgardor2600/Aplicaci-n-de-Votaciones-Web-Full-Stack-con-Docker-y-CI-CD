@@ -147,9 +147,10 @@ class VotingApp {
      */
     async vote(option) {
         this.loadingOverlay.show('Enviando voto...');
+        let response;
         
         try {
-            const response = await apiClient.vote(option);
+            response = await apiClient.vote(option);
             
             if (response.ok) {
                 // Actualizar visual del card voteado
@@ -161,17 +162,24 @@ class VotingApp {
                 // Actualizar resultados inmediatamente
                 await this.refreshResults();
                 
-                return response;
             } else {
                 throw new Error(response.error || 'Error al enviar voto');
             }
             
         } catch (error) {
-            const userMessage = apiErrorHandler.handle(error);
+            const userMessage = apiErrorHandler.handle
+                ? apiErrorHandler.handle(error)
+                : (error?.message || 'Error al enviar voto');
+            this.showToast(userMessage, 'error');
             throw new Error(userMessage);
         } finally {
-            this.loadingOverlay.hide();
+            console.log("Ejecutando finally en vote()");
+            // 🔒 Siempre ocultar el overlay
+            if (this.loadingOverlay) {
+                this.loadingOverlay.hide();
+            }
         }
+        return response;
     }
 
     /**
@@ -184,14 +192,14 @@ class VotingApp {
         } catch (error) {
             console.error('Error al obtener resultados:', error);
             // Solo mostrar error si no es un error de conectividad temporal
-            if (!error.message.includes('fetch')) {
+            if (!error.message?.includes('fetch')) {
                 this.showToast('Error al cargar resultados', 'warning');
             }
         }
     }
 
     /**
-     * Inicia la actualización automática de resultados
+     * Inicia la actualización automática
      */
     startAutoRefresh() {
         if (this.updateInterval) {
