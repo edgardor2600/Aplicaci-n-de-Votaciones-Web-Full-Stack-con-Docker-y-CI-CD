@@ -141,6 +141,14 @@ jobs:
           done
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
+      - name: Reset database for clean test state
+        env:
+          PGPASSWORD: password
+        run: |
+          echo "🧹 Resetting database to clean state for tests..."
+          psql -h 127.0.0.1 -p 5432 -U user -d votes -c "UPDATE votes SET count = 0 WHERE id IN ('cats', 'dogs');"
+          echo "✅ Database reset complete"
+
       - name: Start Backend Service
         env:
           POSTGRES_HOST: 127.0.0.1
