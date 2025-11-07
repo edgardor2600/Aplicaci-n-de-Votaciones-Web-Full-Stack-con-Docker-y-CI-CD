@@ -32,4 +32,30 @@ test.describe('Phase 1 - UI Visuals and Basic Rendering', () => {
     await expect(page.locator('#dogs-count')).toBeVisible();
   });
 
+  test('should animate result bars on vote', async ({ page }) => {
+    // Stop auto-refresh to have a stable state for testing
+    await page.evaluate(() => window.app.stopAutoRefresh());
+
+    const catsBar = page.locator('#cats-bar');
+    const initialStyle = await catsBar.getAttribute('style');
+    
+    // Expect initial width to be something like 'width: 0%;'
+    expect(initialStyle).toContain('width:');
+
+    // Vote for cats to trigger the animation
+    await page.getByRole('button', { name: /Votar por Gatos/ }).click();
+
+    // Wait for the loading overlay to disappear, indicating the vote is processed and results are updated
+    await expect(page.locator('#loading-overlay')).toBeHidden({ timeout: 10000 });
+
+    // Poll the width style attribute until it changes from the initial value,
+    // confirming the animation has started.
+    await expect.poll(async () => {
+      return catsBar.getAttribute('style');
+    }, {
+      message: 'Result bar did not start animating in time.',
+      timeout: 5000
+    }).not.toBe(initialStyle);
+  });
+
 });
