@@ -26,8 +26,11 @@ class VotingCard {
     }
 
     async handleVote() {
+        const buttonText = this.button.querySelector('.button-text');
+        if (!buttonText) return; // Safety check
+
         this.button.disabled = true;
-        this.button.textContent = 'Enviando...';
+        buttonText.textContent = 'Enviando...';
 
         try {
             const response = await app.vote(this.option);
@@ -41,7 +44,7 @@ class VotingCard {
             app.showToast(error.message || 'Error al enviar voto', 'error');
         } finally {
             this.button.disabled = false;
-            this.button.textContent = `Votar por ${this.option === 'cats' ? 'Gatos' : 'Perros'}`;
+            buttonText.textContent = `Votar por ${this.option === 'cats' ? 'Gatos' : 'Perros'}`;
         }
     }
 
