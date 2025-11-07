@@ -51,16 +51,24 @@ class VotingCard {
     // Método para actualizar estado visual
     updateVisualState(state) {
         this.element.classList.remove('pulse');
-        
+
         if (state === 'success') {
+            // Define the appropriate ring color based on the card's option
+            const ringColor = this.option === 'cats' ? 'ring-indigo-500' : 'ring-teal-500';
+            
+            // Add animation classes for a visual "pop"
+            this.element.classList.add('ring-2', ringColor, 'scale-105');
+
+            // Remove the animation classes after a short delay
             setTimeout(() => {
-                this.element.classList.add('success');
-            }, 100);
+                this.element.classList.remove('ring-2', ringColor, 'scale-105');
+            }, 700);
         } else if (state === 'error') {
-            this.element.classList.add('error');
+            // Optional: Add a visual indicator for an error
+            this.element.classList.add('ring-2', 'ring-red-500');
             setTimeout(() => {
-                this.element.classList.remove('error');
-            }, 1500);
+                this.element.classList.remove('ring-2', 'ring-red-500');
+            }, 700);
         }
     }
 }
