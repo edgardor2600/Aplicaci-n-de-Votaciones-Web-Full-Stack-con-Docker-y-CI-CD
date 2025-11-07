@@ -48,14 +48,16 @@ test.describe('Phase 1 - UI Visuals and Basic Rendering', () => {
     // Wait for the loading overlay to disappear, indicating the vote is processed and results are updated
     await expect(page.locator('#loading-overlay')).toBeHidden({ timeout: 10000 });
 
-    // Poll the width style attribute until it changes from the initial value,
-    // confirming the animation has started.
+    // Poll the width style attribute until it's greater than 0,
+    // confirming the animation has started and the bar has a width.
     await expect.poll(async () => {
-      return catsBar.getAttribute('style');
+      const style = await catsBar.getAttribute('style');
+      const width = parseFloat(style.match(/width:\s*([\d.]+)%/)[1]);
+      return width > 0;
     }, {
-      message: 'Result bar did not start animating in time.',
+      message: 'Result bar did not animate or width is not greater than 0.',
       timeout: 5000
-    }).not.toBe(initialStyle);
+    }).toBe(true);
   });
 
 });
