@@ -21,7 +21,7 @@ Este proyecto es una aplicación web full-stack que permite a los usuarios votar
 | **CI/CD**       | `GitHub Actions`            | Automatización de pruebas y builds.                         |
 | **Orquestación**| `Docker`, `Docker Compose`  | Para un entorno de desarrollo y despliegue consistente.     |
 
-## Estructura del Proyecto
+## Estructura del Proyecto.
 
 ```
 practica-2/
