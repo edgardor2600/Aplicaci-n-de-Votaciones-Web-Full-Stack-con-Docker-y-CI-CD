@@ -141,6 +141,15 @@ jobs:
           done
           psql -h 127.0.0.1 -p 5432 -U user -d votes -f init.sql
 
+      - name: Reset database for clean test state
+        env:
+          PGPASSWORD: password
+        run: |
+          echo "🧹 Resetting database to clean state for tests..."
+          psql -h 127.0.0.1 -p 5432 -U user -d votes -c "DELETE FROM votes WHERE id IN ('cats', 'dogs');"
+          psql -h 127.0.0.1 -p 5432 -U user -d votes -c "INSERT INTO votes (id, count) VALUES ('cats', 0), ('dogs', 0) ON CONFLICT (id) DO UPDATE SET count = 0;"
+          echo "✅ Database reset complete - cats: $(psql -h 127.0.0.1 -p 5432 -U user -d votes -t -c "SELECT count FROM votes WHERE id='cats';") votes, dogs: $(psql -h 127.0.0.1 -p 5432 -U user -d votes -t -c "SELECT count FROM votes WHERE id='dogs';") votes"
+
       - name: Start Backend Service
         env:
           POSTGRES_HOST: 127.0.0.1

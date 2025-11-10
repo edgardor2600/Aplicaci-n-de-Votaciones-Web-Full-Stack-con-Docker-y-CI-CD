@@ -4,113 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cats vs Dogs - Votación</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100" style="font-family: 'Inter', sans-serif;">
+
     <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <h1 class="logo">🐾 Cats vs Dogs</h1>
-            <nav class="nav">
-                <a href="#votar" class="nav-link">Votar</a>
-                <a href="#results" class="nav-link">Resultados</a>
-                <a href="#acerca" class="nav-link">Acerca de</a>
-            </nav>
+    <header class="bg-gray-800/50 backdrop-blur-sm sticky top-0 z-50 border-b border-gray-700">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-2xl font-bold text-white">🐾 Cats vs Dogs</h1>
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="#votar" class="text-gray-300 hover:text-white transition duration-300">Votar</a>
+                    <a href="#results" class="text-gray-300 hover:text-white transition duration-300">Resultados</a>
+                    <a href="#acerca" class="text-gray-300 hover:text-white transition duration-300">Acerca de</a>
+                </nav>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="main">
-        <div class="container">
+    <main>
+        <div class="container mx-auto px-4">
             <!-- Hero Section -->
-            <section class="hero">
-                <h2 class="hero-title">¿Cuál es tu favorito?</h2>
-                <p class="hero-description">Vota por tu opción favorita y observa los resultados en tiempo real</p>
+            <section class="text-center py-20 sm:py-24">
+                <h2 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">¿Cuál es tu favorito?</h2>
+                <p class="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">Vota por tu opción favorita y observa los resultados en tiempo real.</p>
             </section>
 
             <!-- Voting Section -->
-            <section id="votar" class="voting-section">
-                <div class="voting-grid">
+            <section id="votar" class="py-16">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-4xl mx-auto">
                     <!-- Cats Option -->
-                    <div class="voting-card" data-option="cats">
-                        <div class="card-icon">🐱</div>
-                        <h3 class="card-title">Gatos</h3>
-                        <p class="card-description">Elegantes, independientes y adorables</p>
-                        <button class="vote-btn vote-btn--cats" data-option="cats">
-                            Votar por Gatos
+                    <div class="voting-card bg-gray-800/80 border border-gray-700 rounded-2xl p-8 text-center transition duration-300 hover:bg-gray-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10" data-option="cats">
+                        <div class="text-6xl mb-4">🐱</div>
+                        <h3 class="text-3xl font-bold text-white mb-2">Gatos</h3>
+                        <p class="text-gray-400 mb-8">Elegantes, independientes y adorables.</p>
+                        <button class="vote-btn w-full py-3 px-6 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 focus:ring-offset-2 focus:ring-offset-gray-900" data-option="cats">
+                            <span class="button-text">Votar por Gatos</span> <i class="bi bi-arrow-right-circle ml-2 align-middle"></i>
                         </button>
                     </div>
 
                     <!-- Dogs Option -->
-                    <div class="voting-card" data-option="dogs">
-                        <div class="card-icon">🐶</div>
-                        <h3 class="card-title">Perros</h3>
-                        <p class="card-description">Leales, juguetones y cariñosos</p>
-                        <button class="vote-btn vote-btn--dogs" data-option="dogs">
-                            Votar por Perros
+                    <div class="voting-card bg-gray-800/80 border border-gray-700 rounded-2xl p-8 text-center transition duration-300 hover:bg-gray-800 hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/10" data-option="dogs">
+                        <div class="text-6xl mb-4">🐶</div>
+                        <h3 class="text-3xl font-bold text-white mb-2">Perros</h3>
+                        <p class="text-gray-400 mb-8">Leales, juguetones y cariñosos.</p>
+                        <button class="vote-btn w-full py-3 px-6 rounded-lg font-semibold text-white bg-teal-600 hover:bg-teal-500 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-500/50 focus:ring-offset-2 focus:ring-offset-gray-900" data-option="dogs">
+                            <span class="button-text">Votar por Perros</span> <i class="bi bi-arrow-right-circle ml-2 align-middle"></i>
                         </button>
                     </div>
                 </div>
             </section>
 
             <!-- Results Section -->
-            <section id="results" class="results-section">
-                <div class="results-container">
-                    <h2 class="results-title">Resultados en Tiempo Real</h2>
-                    <div class="results-grid">
-                        <div class="result-item result-item--cats">
-                            <div class="result-icon">🐱</div>
-                            <div class="result-content">
-                                <h3 class="result-name">Gatos</h3>
-                                <div class="result-bar">
-                                    <div class="result-fill result-fill--cats" id="cats-bar"></div>
+            <section id="results" class="py-16 sm:py-20">
+                <div class="max-w-4xl mx-auto results-container">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-center mb-10 text-white">Resultados en Tiempo Real</h2>
+                    <div class="space-y-6">
+                        <!-- Cats Result -->
+                        <div class="bg-gray-800/80 border border-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xl font-bold flex items-center text-white">🐱 Gatos</h3>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-xl font-bold text-indigo-400" id="cats-percentage">0%</span>
+                                    <span class="text-gray-400 text-sm" id="cats-count">0 votos</span>
                                 </div>
-                                <span class="result-count" id="cats-count">0</span>
-                                <span class="result-percentage" id="cats-percentage">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+                                <div id="cats-bar" class="bg-indigo-500 h-4 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
                             </div>
                         </div>
-
-                        <div class="result-item result-item--dogs">
-                            <div class="result-icon">🐶</div>
-                            <div class="result-content">
-                                <h3 class="result-name">Perros</h3>
-                                <div class="result-bar">
-                                    <div class="result-fill result-fill--dogs" id="dogs-bar"></div>
+                        <!-- Dogs Result -->
+                        <div class="bg-gray-800/80 border border-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xl font-bold flex items-center text-white">🐶 Perros</h3>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-xl font-bold text-teal-400" id="dogs-percentage">0%</span>
+                                    <span class="text-gray-400 text-sm" id="dogs-count">0 votos</span>
                                 </div>
-                                <span class="result-count" id="dogs-count">0</span>
-                                <span class="result-percentage" id="dogs-percentage">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+                                <div id="dogs-bar" class="bg-teal-500 h-4 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="total-votes">
+                    <div class="text-center mt-8 text-lg text-gray-400">
                         <span class="total-label">Total de votos: </span>
-                        <span class="total-count" id="total-votes">0</span>
+                        <span class="total-count font-bold text-white" id="total-votes">0</span>
                     </div>
                 </div>
             </section>
 
             <!-- About Section -->
-            <section id="acerca" class="about-section">
-                <div class="about-content">
-                    <h2 class="about-title">Acerca de esta Aplicación</h2>
-                    <p class="about-text">
+            <section id="acerca" class="py-20 border-t border-gray-800">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-white mb-4">Acerca de esta Aplicación</h2>
+                    <p class="text-gray-400 mb-8">
                         Esta es una aplicación de votación desarrollada como proyecto full-stack 
                         utilizando Python Flask para el backend y tecnologías web modernas para el frontend.
                     </p>
-                    <div class="tech-stack">
-                        <h3 class="tech-title">Tecnologías Utilizadas:</h3>
-                        <ul class="tech-list">
-                            <li class="tech-item">🐍 Python + Flask</li>
-                            <li class="tech-item">🗄️ PostgreSQL</li>
-                            <li class="tech-item">🌐 HTML5 + CSS3 + JavaScript</li>
-                            <li class="tech-item">🐳 Docker + Nginx</li>
-                            <li class="tech-item">⚡ GitHub Actions CI/CD</li>
-                        </ul>
+                    <h3 class="text-xl font-semibold text-white mb-4">Tecnologías Utilizadas</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-4 text-gray-300">
+                        <span class="bg-gray-800 rounded-full px-4 py-2 text-sm">🐍 Python + Flask</span>
+                        <span class="bg-gray-800 rounded-full px-4 py-2 text-sm">🗄️ PostgreSQL</span>
+                        <span class="bg-gray-800 rounded-full px-4 py-2 text-sm">🌐 HTML5 + CSS3 + JS</span>
+                        <span class="bg-gray-800 rounded-full px-4 py-2 text-sm">🐳 Docker + Nginx</span>
+                        <span class="bg-gray-800 rounded-full px-4 py-2 text-sm">⚡ GitHub Actions</span>
                     </div>
                 </div>
             </section>
@@ -118,9 +122,9 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p class="footer-text">
+    <footer class="border-t border-gray-800 mt-12">
+        <div class="container mx-auto px-4 text-center py-6">
+            <p class="text-gray-500">
                 © 2025 Cats vs Dogs - Aplicación de Votación Full-Stack
             </p>
         </div>

@@ -15,9 +15,10 @@ test.describe('Main Page: Structure and Voting', () => {
     await page.goto('/');
     await page.waitForTimeout(2500);
     await page.evaluate(() => window.app.stopAutoRefresh());
-    const header = page.locator('.header .logo');
+    // The old classes '.header' and '.logo' were removed during the redesign.
+    // We now locate the main heading by its accessible role and name, which is more robust.
+    const header = page.getByRole('heading', { name: '🐾 Cats vs Dogs' });
     await expect(header).toBeVisible();
-    await expect(header).toHaveText('🐾 Cats vs Dogs');
   });
 
   test('should display both voting cards', async ({ page }) => {
@@ -30,8 +31,10 @@ test.describe('Main Page: Structure and Voting', () => {
     await expect(catsCard).toBeVisible();
     await expect(dogsCard).toBeVisible();
 
-    await expect(catsCard.locator('.card-title')).toHaveText('Gatos');
-    await expect(dogsCard.locator('.card-title')).toHaveText('Perros');
+    // The old '.card-title' class was removed.
+    // We now locate the heading within each card by its role and name.
+    await expect(catsCard.getByRole('heading', { name: 'Gatos' })).toBeVisible();
+    await expect(dogsCard.getByRole('heading', { name: 'Perros' })).toBeVisible();
   });
 
   test('should show loading indicator and results after voting', async ({ page }) => {
